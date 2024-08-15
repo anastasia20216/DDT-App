@@ -1,0 +1,169 @@
+import sqlite3
+import subprocess
+from tkinter import *
+from PIL import Image, ImageTk
+
+def show_recipes():
+    """
+    Open the recipes window.
+    """
+    root.destroy()
+    subprocess.run(["python", "recipes.py"])
+
+def show_favorites():
+    """
+    Open the favorites window.
+    """
+    subprocess.run(["python", "favorite.py"])
+    root.destroy()
+
+def search():
+    """
+    Open the search window.
+    """
+    subprocess.run(["python", "search.py"])
+    root.destroy()
+
+def home():
+    """
+    Open the home window.
+    """
+    subprocess.run(["python", "app1.1.py"])
+    root.destroy()
+
+def profile():
+    """
+    Open the user profile window.
+    """
+    subprocess.run(["python", "user_pg.py"])
+    root.destroy()
+
+def rep_page():
+    """
+    Open the recipe page.
+    """
+    subprocess.run(["python", "rep_page.py"])
+
+def load_images(image_paths):
+    """
+    Load images from file paths and return a list of PhotoImage objects.
+    """
+    image_refs = []
+    for img_path in image_paths:
+        try:
+            img = Image.open(img_path)
+            img = img.resize((200, 133))  # Resize image
+            photo = ImageTk.PhotoImage(img)
+            image_refs.append(photo)
+        except Exception as e:
+            print(f"Error loading image {img_path}: {e}")
+            # Handle error, maybe use a default image
+    return image_refs
+
+def btn_clicked(button, idx, recipe_names):
+    """
+    Handle button click event to show the selected recipe.
+    """
+    global selected_id
+    selected_id = idx + 1
+    print(f"Recipe ID: {selected_id}, Recipe Name: {recipe_names[idx]}")
+    subprocess.run(["python", "app.py"])
+    root.destroy()
+
+# Initialize the main Tkinter window
+root = Tk()
+root.title("Title")
+root.geometry("1600x900")
+root.config(bg='#FAF9F6')
+
+# Create and place side and nav_bar frames
+side = Frame(root, bg='#FAF9F6')
+side.place(relx=0, rely=0, relheight=1, relwidth=0.18)
+
+nav_bar = Frame(root, bg='#FAF9F6')
+nav_bar.place(relx=0, rely=0, relheight=0.08, relwidth=1)
+
+# Create and place labels and buttons in nav_bar
+Label(
+    nav_bar, text='Recipes', font="Times 30 bold", bg='#FAF9F6'
+).place(relx=0.45, rely=0.2)
+
+Button(
+    nav_bar, text='Home', relief="flat", borderwidth=0, command=home,
+    width=10, height=2, justify='center', bg='#FAF9F6', activebackground='white', font="Times 12"
+).place(relx=0.03, rely=0.2)
+
+Button(
+    nav_bar, text='Recipes', relief="flat", borderwidth=0, command=show_recipes,
+    width=10, height=2, justify='center', bg='#FAF9F6', activebackground='white', font="Times 12"
+).place(relx=0.1, rely=0.2)
+
+Button(
+    nav_bar, text="Search", relief="flat", borderwidth=0, command=search,
+    width=10, height=2, justify='center', bg='#FAF9F6', activebackground='white', font="Times 12"
+).place(relx=0.17, rely=0.2)
+
+Button(
+    nav_bar, text="Favorites", relief="flat", borderwidth=0, command=show_favorites,
+    width=10, height=2, justify='center', bg='#FAF9F6', activebackground='white', font="Times 12"
+).place(relx=0.24, rely=0.2)
+
+# Create and place the profile button
+logo = PhotoImage(file="profile.png").subsample(4)
+Button(
+    root, image=logo, bg='#FAF9F6', relief="flat", borderwidth=0, command=profile
+).place(relx=0.92, rely=0.01)
+
+# Create and place the categories label
+Font1 = ("Times", 14)
+Label(
+    root, text='CATEGORIES', font=Font1, bg='#FAF9F6'
+).place(relx=0.03, rely=0.15)
+
+# Create and place recipe frame
+recipe_frame = Frame(root, bg='#FAF9F6')
+recipe_frame.place(relx=0.15, rely=0.16, relheight=0.75, relwidth=0.84)
+
+# Create and place category buttons
+categories = ['Vegetarian', 'Vegan', 'Chicken', 'Gluten Free', 'Healthy', 'Easy Meals', 'Lactose Free', 'Pasta']
+for i, category in enumerate(categories):
+    Button(
+        side, text=category, borderwidth=0.5, bg='#FAF9F6', font="Times 10"
+    ).place(relx=0.08, rely=0.22 + 0.06 * i)
+
+# Database Connection and Data Retrieval
+connection = sqlite3.connect('data.db')
+cursor = connection.cursor()
+
+cursor.execute("SELECT * FROM recipe")
+rows = cursor.fetchall()
+recipe_names = [row[1] for row in rows]
+
+# Fetch image paths
+cursor.execute("SELECT * FROM recipe")
+image_paths = [row[5] for row in rows]
+connection.close()
+
+# Load images
+image_refs = load_images(image_paths)
+
+# Place recipe buttons
+x = 0.1
+y = 0.19
+buttons = []
+
+for i in range(min(10, len(recipe_names))):
+    recipe_button = Button(
+        recipe_frame, image=image_refs[i], text=recipe_names[i], relief="flat", borderwidth=0, compound=TOP, bg='#FAF9F6'
+    )
+    recipe_button.place(relx=x, rely=y)
+    x += 0.2
+    recipe_button.config(command=lambda b=recipe_button, idx=i: btn_clicked(b, idx, recipe_names))
+    buttons.append(recipe_button)
+    
+    if i == 4:
+        y += 0.2
+        x = 0.1
+
+# Start the Tkinter event loop
+root.mainloop()
